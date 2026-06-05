@@ -1,0 +1,93 @@
+services:
+  parsedmarc:
+    build: /opt/container/dmarc-visualizer/parsedmarc/
+    restart: unless-stopped
+    volumes:
+      - /opt/container/dmarc-visualizer/parsedmarc/input:/input
+      - /opt/container/dmarc-visualizer/parsedmarc/output:/output
+    command: parsedmarc -c /parsedmarc.ini /input/* --debug
+    depends_on:
+      - elasticsearch
+    networks:
+      - parsedmarc-network
+
+  elasticsearch:
+    image: elasticsearch:8.12.1
+    user: 1000:1000
+    restart: unless-stopped
+    mem_limit: 4g
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    networks:
+      - parsedmarc-network
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data:/usr/share/elasticsearch/data
+
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    restart: unless-stopped
+    environment:
+      - network.host=127.0.0.1
+      - http.host=0.0.0.0
+      - node.name=opensearch
+      - discovery.type=single-node
+      - cluster.name=parsedmarc-cluster
+      - discovery.seed_hosts=opensearch
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+    networks:
+      - parsedmarc-network
+    ports:
+      - 9201:9200
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -XGET http://localhost:9201/_cluster/health?pretty | grep status | grep -q '\\(green\\|yellow\\)'"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 24
+
+  grafana:
+    build: /opt/container/dmarc-visualizer/grafana/
+    restart: unless-stopped
+    ports:
+      - 3002:3000
+    user: root
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/Grafana-DMARC_Reports.json-new_panel.json
+      - GF_DASHBOARDS_MIN_REFRESH_INTERVAL=5s
+    networks:
+      - parsedmarc-network
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  geoipupdate:
+    image: maxmindinc/geoipupdate
+    restart: unless-stopped
+    environment:
+      - GEOIPUPDATE_EDITION_IDS=GeoLite2-Country
+      - GEOIPUPDATE_PRESERVE_FILE_TIMES=1
+      - GEOIPUPDATE_ACCOUNT_ID=${GEOIPUPDATE_ACCOUNT_ID}
+      - GEOIPUPDATE_LICENSE_KEY=${GEOIPUPDATE_LICENSE_KEY}
+      - GEOIPUPDATE_FREQUENCY=24      
+    volumes:
+      - /opt/container/dmarc-visualizer/parsedmarc/geoip:/usr/share/GeoIP:rw
+    networks:
+      - parsedmarc-network
+
+networks:
+  parsedmarc-network:
+    driver: bridge
+
+volumes:
+  elasticsearch_data:
+    name: lab_dmarc_elasticsearch_data1
+  grafana_data:
+    name: lab_dmarc_grafana_data1
