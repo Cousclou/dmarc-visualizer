@@ -90,6 +90,6 @@ networks:
 
 volumes:
   elasticsearch_data:
-    name: lab_dmarc_elasticsearch_data1
+    name: lab_dmarc_elasticsearch_data
   grafana_data:
-    name: lab_dmarc_grafana_data1
+    name: lab_dmarc_grafana_data
