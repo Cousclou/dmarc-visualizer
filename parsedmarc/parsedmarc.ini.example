@@ -1,0 +1,40 @@
+# doc de configuration: https://domainaware.github.io/parsedmarc/usage.html
+# Copier ce fichier : cp parsedmarc.ini.example parsedmarc.ini
+### ADJUST YOUR SETTINGS
+[general]
+save_aggregate = True
+save_forensic = True
+output = /output/
+reports_folder = /input/
+
+[imap]
+host = mail.example.com
+user = dmarc@example.com
+password = your_imap_password
+port = 993
+ssl = True
+
+# Microsoft 365 (optionnel)
+#[msgraph]
+#auth_method = ClientSecret
+#client_id = your-azure-client-id
+#client_secret = your-azure-client-secret
+#tenant_id = your-azure-tenant-id
+#mailbox = dmarc-reports@example.com
+
+[opensearch]
+hosts = https://admin:ChangeMe_SecurePassword123!@opensearch:9200
+ssl = True
+
+[mailbox]
+reports_folder = Inbox
+watch = True
+archive_folder = Processed
+delete = False
+
+test = False
+
+### AUCUNE MODIFICATION N'EST REQUISE
+[elasticsearch]
+hosts = elasticsearch:9200
+ssl = False

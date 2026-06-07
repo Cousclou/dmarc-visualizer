@@ -3,3 +3,8 @@
 /parsedmarc/GeoLite2-Country*
 /elastic_data/
 parsedmarc.ini
+parsedmarc/parsedmarc.ini
+parsedmarc/input/
+parsedmarc/output/
+parsedmarc/geoip/
+grafana/data/

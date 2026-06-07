@@ -1,10 +1,12 @@
 services:
   parsedmarc:
-    build: /opt/container/dmarc-visualizer/parsedmarc/
+    build: ./parsedmarc/
     restart: unless-stopped
     volumes:
-      - /opt/container/dmarc-visualizer/parsedmarc/input:/input
-      - /opt/container/dmarc-visualizer/parsedmarc/output:/output
+      - ./parsedmarc/input:/input
+      - ./parsedmarc/output:/output
+      - ./parsedmarc/parsedmarc.ini:/parsedmarc.ini:ro
+      - ./parsedmarc/geoip:/usr/share/GeoIP:ro
     command: parsedmarc -c /parsedmarc.ini /input/* --debug
     depends_on:
       - elasticsearch
@@ -24,7 +26,7 @@ services:
     networks:
       - parsedmarc-network
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data:/usr/share/elasticsearch/data
+      - elasticsearch_data:/usr/share/elasticsearch/data
 
   opensearch:
     image: opensearchproject/opensearch:2.18.0
@@ -46,14 +48,14 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -s -XGET http://localhost:9201/_cluster/health?pretty | grep status | grep -q '\\(green\\|yellow\\)'"
+          "curl -s -XGET http://localhost:9200/_cluster/health?pretty | grep status | grep -q '\\(green\\|yellow\\)'"
         ]
       interval: 10s
       timeout: 10s
       retries: 24
 
   grafana:
-    build: /opt/container/dmarc-visualizer/grafana/
+    build: ./grafana/
     restart: unless-stopped
     ports:
       - 3002:3000
@@ -76,9 +78,9 @@ services:
       - GEOIPUPDATE_PRESERVE_FILE_TIMES=1
       - GEOIPUPDATE_ACCOUNT_ID=${GEOIPUPDATE_ACCOUNT_ID}
       - GEOIPUPDATE_LICENSE_KEY=${GEOIPUPDATE_LICENSE_KEY}
-      - GEOIPUPDATE_FREQUENCY=24      
+      - GEOIPUPDATE_FREQUENCY=${GEOIPUPDATE_FREQUENCY:-24}
     volumes:
-      - /opt/container/dmarc-visualizer/parsedmarc/geoip:/usr/share/GeoIP:rw
+      - ./parsedmarc/geoip:/usr/share/GeoIP:rw
     networks:
       - parsedmarc-network
 
